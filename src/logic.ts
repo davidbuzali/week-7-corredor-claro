@@ -32,6 +32,20 @@ export function classifySegment(segment: Segment): SegmentResult {
   };
 }
 
+export function evidenceForScenario(segments: Segment[], scenarioId: Scenario["id"]): Segment[] {
+  if (scenarioId === "baseline") return segments;
+
+  return segments.map((segment) => {
+    if (segment.id === "seg-3") {
+      return { ...segment, coverage: 0.86, manualAgreement: 0.82 };
+    }
+    if (segment.id === "seg-5") {
+      return { ...segment, coverage: 0.85, manualAgreement: 0.8 };
+    }
+    return segment;
+  });
+}
+
 export function buildGates(scenario: Scenario): Gate[] {
   return [
     {

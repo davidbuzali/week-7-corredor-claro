@@ -1,19 +1,59 @@
 import { useCallback, useMemo, useState } from "react";
 import { MapView } from "./MapView";
 import { scenarios, segments, stops } from "./data";
-import { classifySegment } from "./logic";
+import { allGatesPass, buildGates, classifySegment, evidenceForScenario, validatePlannerNote } from "./logic";
 import type { SegmentResult, Stop } from "./types";
+
+type DecisionEntry = {
+  time: string;
+  outcome: "STOP" | "READY";
+  note: string;
+};
 
 export function App() {
   const [selectedStop, setSelectedStop] = useState<Stop>(stops[0]);
   const [modelResults, setModelResults] = useState<SegmentResult[] | null>(null);
   const [scenarioId, setScenarioId] = useState("baseline");
+  const [note, setNote] = useState("");
+  const [noteError, setNoteError] = useState<string | null>(null);
+  const [decisionLog, setDecisionLog] = useState<DecisionEntry[]>([]);
 
   const selectStop = useCallback((stop: Stop) => setSelectedStop(stop), []);
   const scenario = useMemo(
     () => scenarios.find((item) => item.id === scenarioId) ?? scenarios[0],
     [scenarioId],
   );
+  const gates = useMemo(() => buildGates(scenario), [scenario]);
+  const hasUnknown = modelResults?.some((result) => result.state === "UNKNOWN") ?? true;
+  const canRecordReady = Boolean(modelResults) && !hasUnknown && allGatesPass(scenario);
+
+  function runModel() {
+    setModelResults(evidenceForScenario(segments, scenario.id).map(classifySegment));
+  }
+
+  function changeScenario(nextId: string) {
+    setScenarioId(nextId);
+    setModelResults(null);
+  }
+
+  function recordDecision(outcome: DecisionEntry["outcome"]) {
+    const error = validatePlannerNote(note);
+    if (error) {
+      setNoteError(error);
+      return;
+    }
+    if (outcome === "READY" && !canRecordReady) return;
+    setNoteError(null);
+    setDecisionLog((entries) => [
+      {
+        time: new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
+        outcome,
+        note: note.trim(),
+      },
+      ...entries,
+    ]);
+    setNote("");
+  }
 
   return (
     <main>
@@ -96,7 +136,7 @@ export function App() {
             <h2 id="evidence-title">Chequeo de evidencia por segmento</h2>
             <p>El modelo simulado clasifica eventos acotados. Nunca califica a un conductor.</p>
           </div>
-          <button className="primary" type="button" onClick={() => setModelResults(segments.map(classifySegment))}>
+          <button className="primary" type="button" onClick={runModel}>
             Ejecutar ML simulado
           </button>
         </div>
@@ -143,11 +183,118 @@ export function App() {
         </div>
         <label>
           Escenario de estudio
-          <select value={scenarioId} onChange={(event) => setScenarioId(event.target.value)}>
+          <select value={scenarioId} onChange={(event) => changeScenario(event.target.value)}>
             {scenarios.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}
           </select>
         </label>
         <p>{scenario.description}</p>
+      </section>
+
+      <section className="decision-section" id="decision" aria-labelledby="decision-title">
+        <div className="decision-heading">
+          <div>
+            <p className="eyebrow">Puerta de evidencia</p>
+            <h2 id="decision-title">Cinco condiciones antes de avanzar</h2>
+            <p>Umbrales propuestos para este piloto academico. No son politica vigente de SEMOVI.</p>
+          </div>
+          <div className={`overall-status ${canRecordReady ? "ready" : "blocked"}`} aria-live="polite">
+            <span>Estado del escenario</span>
+            <strong>{canRecordReady ? "Evidencia lista para estudio humano" : "Revision humana requerida"}</strong>
+            <small>
+              {!modelResults
+                ? "Ejecuta el ML simulado para completar la revision."
+                : hasUnknown
+                  ? "Hay segmentos UNKNOWN; se necesitan mas observaciones."
+                  : gates.some((gate) => !gate.pass)
+                    ? "Una o mas condiciones no alcanzan el umbral propuesto."
+                    : "Todas las condiciones pasan; esto no implementa un cambio de servicio."}
+            </small>
+          </div>
+        </div>
+
+        <div className="gate-grid">
+          {gates.map((gate) => (
+            <article className={`gate-card ${gate.pass ? "pass" : "fail"}`} id={`gate-${gate.id}`} key={gate.id}>
+              <div className="gate-state" aria-label={gate.pass ? "Condicion cumplida" : "Condicion no cumplida"}>
+                {gate.pass ? "PASA" : "FALTA"}
+              </div>
+              <h3>{gate.label}</h3>
+              <div className="gate-numbers">
+                <strong>{gate.value}</strong>
+                <span>umbral {gate.threshold}</span>
+              </div>
+              <p>{gate.explanation}</p>
+            </article>
+          ))}
+        </div>
+
+        <div className="shadow-grid">
+          <article className="shadow-card">
+            <p className="eyebrow">Shadow clause</p>
+            <h3>No desaparecer al conductor para mejorar la hoja de calculo.</h3>
+            <ul>
+              <li>No score, ranking ni perfil permanente del conductor.</li>
+              <li>No recorte automatico de vehiculos, paradas u horas pagadas.</li>
+              <li>El conocimiento aportado permanece atribuible y accesible al contribuyente.</li>
+              <li>Una transicion exige trabajo equivalente o compensacion acordada.</li>
+            </ul>
+          </article>
+          <article className="authority-card">
+            <p className="eyebrow">Autoridad humana</p>
+            <h3>Este control registra una postura, no cambia la operacion.</h3>
+            <p>
+              Una decision real exigiria validacion independiente, evidencia aceptada y firma de la autoridad responsable.
+              No se transmite nada desde este prototipo.
+            </p>
+            <label htmlFor="planner-note">Justificacion del analista</label>
+            <textarea
+              id="planner-note"
+              value={note}
+              maxLength={280}
+              aria-describedby="note-help note-error"
+              aria-invalid={Boolean(noteError)}
+              onChange={(event) => {
+                setNote(event.target.value);
+                if (noteError) setNoteError(null);
+              }}
+              placeholder="Ej. Falta ampliar la muestra en Santa Martha antes de preparar el estudio."
+            />
+            <div className="field-meta" id="note-help">
+              <span>12-280 caracteres</span>
+              <span>{note.length}/280</span>
+            </div>
+            {noteError && <p className="field-error" id="note-error" role="alert">{noteError}</p>}
+            <div className="decision-actions">
+              <button className="secondary" type="button" onClick={() => recordDecision("STOP")}>
+                Detener y reunir evidencia
+              </button>
+              <button className="primary" type="button" disabled={!canRecordReady} onClick={() => recordDecision("READY")}>
+                Registrar lista para estudio humano
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <div className="decision-log" aria-live="polite">
+          <div>
+            <p className="eyebrow">Traza local de esta sesion</p>
+            <h3>Decisiones registradas</h3>
+          </div>
+          {decisionLog.length === 0 ? (
+            <p className="log-empty">Todavia no hay una postura registrada.</p>
+          ) : (
+            <ol>
+              {decisionLog.map((entry, index) => (
+                <li key={`${entry.time}-${index}`}>
+                  <span>{entry.time}</span>
+                  <strong>{entry.outcome === "READY" ? "Lista para estudio humano" : "Detener y reunir evidencia"}</strong>
+                  <p>{entry.note}</p>
+                  <small>Registrado por: Analista autorizado - rol inventado. No ocurrio ninguna accion operativa.</small>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
       </section>
 
       <section className="boundary-banner">
