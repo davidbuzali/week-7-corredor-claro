@@ -204,7 +204,9 @@ def image_flowable(path: Path, alt: str):
     with PILImage.open(path) as source:
         width, height = source.size
     max_width = 7.25 * inch
-    max_height = 9.15 * inch
+    # Leave enough vertical room for a section heading and caption so a
+    # screenshot is not pushed to a mostly blank following page.
+    max_height = 8.45 * inch
     scale = min(max_width / width, max_height / height)
     return [Image(str(path), width=width * scale, height=height * scale), Paragraph(inline_markup(alt), STYLES["caption"])]
 
@@ -249,7 +251,18 @@ def parse_markdown(path: Path):
         if image_match:
             flush()
             image_path = (path.parent / image_match.group(2)).resolve()
-            story.extend(image_flowable(image_path, image_match.group(1)))
+            image_block = image_flowable(image_path, image_match.group(1))
+            if story and isinstance(story[-1], Paragraph) and story[-1].style in (STYLES["h2"], STYLES["h3"]):
+                heading = story.pop()
+                story.append(KeepTogether([heading, *image_block]))
+            else:
+                story.extend(image_block)
+            index += 1
+            continue
+
+        if stripped == "<!-- pagebreak -->":
+            flush()
+            story.append(PageBreak())
             index += 1
             continue
 

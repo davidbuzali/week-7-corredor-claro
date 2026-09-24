@@ -10,6 +10,8 @@
 
 All people, vehicles, corridor events, counts, and model outputs shown in this test are invented and labeled simulated.
 
+<!-- pagebreak -->
+
 ## Screen 1 - initial state
 
 ![Initial Corredor Claro screen](assets/persona/01-initial.png)
@@ -22,6 +24,8 @@ Lucia's first move was clear: run the simulated-ML check. She immediately unders
 - `UNKNOWN` appeared in English inside an otherwise Spanish interface.
 - `Espera P90`, `confianza`, and `acuerdo manual` were not defined for a non-technical audience.
 - The prominent map did not state whether every stop had to be inspected before recording a posture.
+
+<!-- pagebreak -->
 
 ## Screen 2 - baseline simulated-ML result
 
