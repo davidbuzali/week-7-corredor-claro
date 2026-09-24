@@ -51,6 +51,15 @@ Change the validator minimum from 10 to 12, make the no-driver-score boundary ex
 - Governance fix: changed the passing outcome from `evidence ready` to `scenario candidate` so simulated inputs cannot overstate field validation.
 - Captured the fixed state in `docs/assets/persona/03-coverage-first-fixed.png`.
 
+## Second deployment and final verification - 2026-09-24
+
+- Second production deployment: `https://week-7-corredor-claro-ehv22oh9j-davidbuzali.vercel.app`
+- Deployment id: `dpl_AvodQPFGsaupwAjwpSLoHeGADUa9`
+- Stable public alias: `https://week-7-corredor-claro.vercel.app`
+- Vercel production build: successful.
+- Public UI check: verified the live page contains `Simulacion hipotetica`, the provenance deltas, and `Registrar escenario candidato`.
+- Final local checks: 6 automated tests passed, TypeScript passed, and the Vite production build passed.
+
 ## Security-floor pass
 
 - No API keys, credentials, `.env` files, or secrets are used.
