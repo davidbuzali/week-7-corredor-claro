@@ -42,6 +42,15 @@ Change the validator minimum from 10 to 12, make the no-driver-score boundary ex
 - Rebuilt the production bundle: TypeScript and Vite completed successfully.
 - The final redeployment remains pending until the persona test identifies and resolves its most consequential confusion.
 
+## Persona pass - 2026-09-24
+
+- Ran a fresh synthetic-user task as Lucia, an invented SEMOVI corridor-planning analyst.
+- Reviewed the initial screen, the baseline simulated-ML result, and the passing coverage-first state in sequence.
+- Worst confusion: choosing a scenario appeared to create better evidence without showing whether observations had actually been collected.
+- Fix: added the `Que cambio y de donde viene` panel, explicit hypothetical label, dataset version/date, and every delta from baseline.
+- Governance fix: changed the passing outcome from `evidence ready` to `scenario candidate` so simulated inputs cannot overstate field validation.
+- Captured the fixed state in `docs/assets/persona/03-coverage-first-fixed.png`.
+
 ## Security-floor pass
 
 - No API keys, credentials, `.env` files, or secrets are used.

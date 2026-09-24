@@ -11,6 +11,8 @@ test("interface contains required simulated and human-authority language", async
   assert.match(app, /No score de conductor/);
   assert.match(app, /Sin recortes automaticos/);
   assert.match(app, /No ocurrio ninguna accion operativa/);
+  assert.match(app, /Simulacion hipotetica/);
+  assert.match(app, /Registrar escenario candidato/);
 });
 
 test("interface does not expose ride-hailing or driver-ranking controls", async () => {

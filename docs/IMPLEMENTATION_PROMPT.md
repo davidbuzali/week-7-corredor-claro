@@ -92,6 +92,8 @@ Let the planner write a validated note and record one of two local-session outco
 - `Stop and collect more evidence`.
 - `Evidence ready for human study` only when every gate passes.
 
+After the persona test, the hypothetical coverage-first path uses the stricter label `Scenario candidate for human study`; it may not imply that invented observations were collected or accepted.
+
 After recording, show a trace entry with time, chosen status, and the statement `No operational action occurred.`
 
 Acceptance criteria:

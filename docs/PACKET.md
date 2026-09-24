@@ -155,3 +155,7 @@ Use a fresh synthetic-user conversation as **Lucia**, an invented 38-year-old co
 ## Acceptance boundary
 
 The slice succeeds when it helps a human determine whether the evidence is ready for a planning study. It does not prove that SEMOVI will buy the study, that the evidence is representative in the real world, that a route should change, or that any financial return exists.
+
+## Post-persona clarification
+
+The working prototype tightened this boundary after the synthetic-user test. Because the coverage-first values are hypothetical and simulated, a passing state is labeled **scenario candidate for human study**, not evidence collected or accepted in the field. A provenance panel now exposes every change from baseline, its simulated version/date, and the fact that no real observations were added.

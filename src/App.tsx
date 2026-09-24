@@ -2,18 +2,26 @@ import { useCallback, useMemo, useState } from "react";
 import { MapView } from "./MapView";
 import { scenarios, segments, stops } from "./data";
 import { allGatesPass, buildGates, classifySegment, evidenceForScenario, validatePlannerNote } from "./logic";
-import type { SegmentResult, Stop } from "./types";
+import type { Scenario, SegmentResult, Stop } from "./types";
 
 type DecisionEntry = {
   time: string;
-  outcome: "STOP" | "READY";
+  outcome: "STOP" | "CANDIDATE";
   note: string;
 };
 
+function initialScenarioFromUrl(): Scenario["id"] {
+  return new URLSearchParams(window.location.search).get("scenario") === "coverage" ? "coverage" : "baseline";
+}
+
 export function App() {
   const [selectedStop, setSelectedStop] = useState<Stop>(stops[0]);
-  const [modelResults, setModelResults] = useState<SegmentResult[] | null>(null);
-  const [scenarioId, setScenarioId] = useState("baseline");
+  const [scenarioId, setScenarioId] = useState<Scenario["id"]>(initialScenarioFromUrl);
+  const [modelResults, setModelResults] = useState<SegmentResult[] | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("run") !== "1") return null;
+    return evidenceForScenario(segments, initialScenarioFromUrl()).map(classifySegment);
+  });
   const [note, setNote] = useState("");
   const [noteError, setNoteError] = useState<string | null>(null);
   const [decisionLog, setDecisionLog] = useState<DecisionEntry[]>([]);
@@ -25,14 +33,14 @@ export function App() {
   );
   const gates = useMemo(() => buildGates(scenario), [scenario]);
   const hasUnknown = modelResults?.some((result) => result.state === "UNKNOWN") ?? true;
-  const canRecordReady = Boolean(modelResults) && !hasUnknown && allGatesPass(scenario);
+  const canRecordCandidate = Boolean(modelResults) && !hasUnknown && allGatesPass(scenario);
 
   function runModel() {
     setModelResults(evidenceForScenario(segments, scenario.id).map(classifySegment));
   }
 
   function changeScenario(nextId: string) {
-    setScenarioId(nextId);
+    setScenarioId(nextId === "coverage" ? "coverage" : "baseline");
     setModelResults(null);
   }
 
@@ -42,7 +50,7 @@ export function App() {
       setNoteError(error);
       return;
     }
-    if (outcome === "READY" && !canRecordReady) return;
+    if (outcome === "CANDIDATE" && !canRecordCandidate) return;
     setNoteError(null);
     setDecisionLog((entries) => [
       {
@@ -188,6 +196,29 @@ export function App() {
           </select>
         </label>
         <p>{scenario.description}</p>
+        <div className={`scenario-provenance ${scenario.id === "coverage" ? "hypothetical" : "snapshot"}`}>
+          <div className="scenario-provenance-head">
+            <div>
+              <span>{scenario.id === "coverage" ? "Simulacion hipotetica" : "Instantanea simulada"}</span>
+              <strong>Que cambio y de donde viene</strong>
+            </div>
+            <small>CC-OR1-SIM-v2 · corte simulado 24 sep 2026</small>
+          </div>
+          {scenario.id === "coverage" ? (
+            <>
+              <p>Supone observaciones adicionales inventadas; no fueron recolectadas ni aceptadas en campo.</p>
+              <ul>
+                <li><b>GPS:</b> 82% → 89% (+7 puntos)</li>
+                <li><b>Paradas muestreadas:</b> 5/8 → 6/8</li>
+                <li><b>Acuerdo manual:</b> 76% → 84% (+8 puntos)</li>
+                <li><b>Espera P90:</b> +2.2 min en la parada mas afectada</li>
+                <li><b>Trabajo pagado:</b> +10 h para un rol de transicion</li>
+              </ul>
+            </>
+          ) : (
+            <p>Valores base inventados para demostrar la puerta de evidencia. No representan observaciones reales de SEMOVI.</p>
+          )}
+        </div>
       </section>
 
       <section className="decision-section" id="decision" aria-labelledby="decision-title">
@@ -197,9 +228,9 @@ export function App() {
             <h2 id="decision-title">Cinco condiciones antes de avanzar</h2>
             <p>Umbrales propuestos para este piloto academico. No son politica vigente de SEMOVI.</p>
           </div>
-          <div className={`overall-status ${canRecordReady ? "ready" : "blocked"}`} aria-live="polite">
+          <div className={`overall-status ${canRecordCandidate ? "ready" : "blocked"}`} aria-live="polite">
             <span>Estado del escenario</span>
-            <strong>{canRecordReady ? "Evidencia lista para estudio humano" : "Revision humana requerida"}</strong>
+            <strong>{canRecordCandidate ? "Escenario candidato para estudio humano" : "Revision humana requerida"}</strong>
             <small>
               {!modelResults
                 ? "Ejecuta el ML simulado para completar la revision."
@@ -268,8 +299,8 @@ export function App() {
               <button className="secondary" type="button" onClick={() => recordDecision("STOP")}>
                 Detener y reunir evidencia
               </button>
-              <button className="primary" type="button" disabled={!canRecordReady} onClick={() => recordDecision("READY")}>
-                Registrar lista para estudio humano
+              <button className="primary" type="button" disabled={!canRecordCandidate} onClick={() => recordDecision("CANDIDATE")}>
+                Registrar escenario candidato
               </button>
             </div>
           </article>
@@ -287,7 +318,7 @@ export function App() {
               {decisionLog.map((entry, index) => (
                 <li key={`${entry.time}-${index}`}>
                   <span>{entry.time}</span>
-                  <strong>{entry.outcome === "READY" ? "Lista para estudio humano" : "Detener y reunir evidencia"}</strong>
+                  <strong>{entry.outcome === "CANDIDATE" ? "Escenario candidato para estudio humano" : "Detener y reunir evidencia"}</strong>
                   <p>{entry.note}</p>
                   <small>Registrado por: Analista autorizado - rol inventado. No ocurrio ninguna accion operativa.</small>
                 </li>
