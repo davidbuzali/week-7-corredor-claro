@@ -97,7 +97,7 @@ export function allGatesPass(scenario: Scenario): boolean {
 
 export function validatePlannerNote(note: string): string | null {
   const length = note.trim().length;
-  if (length < 10) return "Escribe al menos 12 caracteres para dejar una justificacion util.";
+  if (length < 12) return "Escribe al menos 12 caracteres para dejar una justificacion util.";
   if (length > 280) return "La nota debe tener 280 caracteres o menos.";
   return null;
 }

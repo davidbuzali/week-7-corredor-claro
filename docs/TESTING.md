@@ -34,6 +34,14 @@ The rendered-language check also found that the permanent safety boundary appear
 
 Change the validator minimum from 10 to 12, make the no-driver-score boundary explicit, rerun every test, rebuild, verify the complete user flow visually, and create a second production deployment after the persona fix.
 
+## Mechanical pass 2 - 2026-09-24
+
+- Corrected the planner-note validator to enforce the displayed 12-character minimum.
+- Added the explicit boundary `No score de conductor` to the shadow-clause panel.
+- Reran 6 automated tests: **6 passed, 0 failed**.
+- Rebuilt the production bundle: TypeScript and Vite completed successfully.
+- The final redeployment remains pending until the persona test identifies and resolves its most consequential confusion.
+
 ## Security-floor pass
 
 - No API keys, credentials, `.env` files, or secrets are used.

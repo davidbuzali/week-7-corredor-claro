@@ -233,7 +233,7 @@ export function App() {
             <p className="eyebrow">Shadow clause</p>
             <h3>No desaparecer al conductor para mejorar la hoja de calculo.</h3>
             <ul>
-              <li>No score, ranking ni perfil permanente del conductor.</li>
+              <li>No score de conductor, ranking ni perfil permanente.</li>
               <li>No recorte automatico de vehiculos, paradas u horas pagadas.</li>
               <li>El conocimiento aportado permanece atribuible y accesible al contribuyente.</li>
               <li>Una transicion exige trabajo equivalente o compensacion acordada.</li>
